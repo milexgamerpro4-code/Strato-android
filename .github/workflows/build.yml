@@ -1,0 +1,41 @@
+name: Build Strato APK from ZIP
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install unzip
+        run: sudo apt-get install unzip -y
+
+      - name: Extract Strato ZIP
+        run: |
+          unzip strato-master.zip -d strato
+          ls strato
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Give gradlew permission
+        run: chmod +x strato/**/gradlew || true
+
+      - name: Build APK
+        run: |
+          cd strato/* || exit 1
+          ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: strato-apk
+          path: strato/**/app/build/outputs/apk/
