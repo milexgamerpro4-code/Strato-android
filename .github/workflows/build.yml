@@ -1,41 +1,46 @@
-name: Build Strato APK from ZIP
+name: Build Strato APK (Debug)
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
-      - name: Install unzip
-        run: sudo apt-get install unzip -y
+    - name: Extract ZIP
+      run: |
+        unzip *.zip
+        ls
 
-      - name: Extract Strato ZIP
-        run: |
-          unzip strato-master.zip -d strato
-          ls strato
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
 
-      - name: Give gradlew permission
-        run: chmod +x strato/**/gradlew || true
+    - name: Install NDK + CMake
+      run: |
+        sdkmanager "ndk;26.1.10909125" "cmake;3.22.1"
 
-      - name: Build APK
-        run: |
-          cd strato/* || exit 1
-          ./gradlew assembleRelease
+    - name: Grant Gradle permission
+      run: |
+        cd strato*
+        chmod +x gradlew
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: strato-apk
-          path: strato/**/app/build/outputs/apk/
+    - name: Build DEBUG APK
+      run: |
+        cd strato*
+        ./gradlew assembleDebug --stacktrace
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: strato-debug-apk
+        path: "**/*.apk"
